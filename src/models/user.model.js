@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
     {
@@ -9,13 +10,13 @@ const userSchema = new Schema(
             lowercase: true,
             trim: true,
             minLength: 1,
-            maxLength: 30,
+            maxLength: 30
         },
         password: {
             type: String,
             required: true,
             minLength: 6,
-            maxLength: 50,
+            maxLength: 50
         },
         email: {
             type: String,
@@ -23,11 +24,23 @@ const userSchema = new Schema(
             unique: true,
             lowercase: true,
             trim: true,
+            match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         }
     },
     {
-        timestamps: true,
+        timestamps: true
     }
 );
+
+// hash password before saving
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
+    this.password = await bcrypt.hash(this.password, 10);
+});
+
+// compare passwords
+userSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password);
+};
 
 export const User = mongoose.model("User", userSchema);
